@@ -1,0 +1,80 @@
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Environment Variables
+.env
+.env.local
+
+# =========================
+# UV
+# =========================
+
+# Keep lock file tracked
+# uv.lock
+
+# =========================
+# Alembic
+# =========================
+
+*.db
+
+# =========================
+# Node
+# =========================
+
+node_modules/
+
+# Vite
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# VS Code
+# =========================
+
+.vscode/
+
+# =========================
+# OS Files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# Build Artifacts
+# =========================
+
+build/
+coverage/
+
+# =========================
+# Frontend Environment
+# =========================
+
+frontend/.env
+frontend/.env.local
+
+# =========================
+# Backend Environment
+# =========================
+
+backend/.env
