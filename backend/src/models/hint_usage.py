@@ -2,15 +2,15 @@ import uuid
 from datetime import datetime, UTC
 from sqlalchemy import func
 
-from sqlalchemy import Integer, Float, Boolean, Text, DateTime, String, ForeignKey
+from sqlalchemy import Integer, DateTime, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.base import Base
 
 
-class Attempt(Base):
-    __tablename__ = "attempts"
+class HintUsage(Base):
+    __tablename__ = "hint_usage"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -27,23 +27,11 @@ class Attempt(Base):
         String
     )
 
-    attempt_number: Mapped[int] = mapped_column(
+    hint_level: Mapped[int] = mapped_column(
         Integer
     )
 
-    passed: Mapped[bool] = mapped_column(
-        Boolean
-    )
-
-    score: Mapped[float] = mapped_column(
-        Float
-    )
-
-    feedback: Mapped[str] = mapped_column(
-        Text
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
+    used_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
     )

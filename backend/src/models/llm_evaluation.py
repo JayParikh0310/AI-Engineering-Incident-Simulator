@@ -3,9 +3,10 @@ LLM evaluation ORM model.
 """
 
 from sqlalchemy import ForeignKey, Text, DateTime, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, UTC
 import uuid
 
 from src.db.base import Base
@@ -15,11 +16,13 @@ class LLMEvaluation(Base):
     __tablename__ = "llm_evaluations"
 
     id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
 
     attempt_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
         ForeignKey("attempts.id"),
         nullable=False,
     )
@@ -45,6 +48,6 @@ class LLMEvaluation(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        server_default=func.now(),
     )
