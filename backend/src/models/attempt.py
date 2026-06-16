@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime
 from sqlalchemy import func
 
 from sqlalchemy import Integer, Float, Boolean, Text, DateTime, String, ForeignKey
@@ -20,27 +20,33 @@ class Attempt(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id")
+        ForeignKey("users.id"),
+        nullable=False
     )
 
     incident_id: Mapped[str] = mapped_column(
-        String
+        String,
+        nullable=False
     )
 
     attempt_number: Mapped[int] = mapped_column(
-        Integer
+        Integer,
+        nullable=False
     )
 
     passed: Mapped[bool] = mapped_column(
-        Boolean
+        Boolean,
+        nullable=False
     )
 
     score: Mapped[float] = mapped_column(
-        Float
+        Float,
+        nullable=False
     )
 
     feedback: Mapped[str] = mapped_column(
-        Text
+        Text,
+        nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(

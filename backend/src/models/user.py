@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime
 from sqlalchemy import func
 
 from sqlalchemy import String, DateTime
@@ -19,13 +19,13 @@ class User(Base):
     )
 
     username: Mapped[str] = mapped_column(
-        String,
+        String(50),
         unique=True,
         nullable=False
     )
 
     email: Mapped[str] = mapped_column(
-        String,
+        String(255),
         unique=True,
         nullable=False
     )

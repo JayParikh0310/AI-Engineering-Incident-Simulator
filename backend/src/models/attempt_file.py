@@ -18,13 +18,16 @@ class AttemptFile(Base):
 
     attempt_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("attempts.id")
+        ForeignKey("attempts.id"),
+        nullable=False
     )
 
     filename: Mapped[str] = mapped_column(
-        String
+        String,
+        nullable=False
     )
 
     content: Mapped[str] = mapped_column(
-        Text
+        Text,
+        nullable=False
     )

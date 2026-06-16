@@ -6,7 +6,7 @@ from sqlalchemy import ForeignKey, Text, DateTime, String
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime, UTC
+from datetime import datetime
 import uuid
 
 from src.db.base import Base

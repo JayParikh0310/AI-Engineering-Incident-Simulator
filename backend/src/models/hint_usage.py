@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime
 from sqlalchemy import func
 
 from sqlalchemy import Integer, DateTime, String, ForeignKey
@@ -20,15 +20,18 @@ class HintUsage(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id")
+        ForeignKey("users.id"),
+        nullable=False
     )
 
     incident_id: Mapped[str] = mapped_column(
-        String
+        String,
+        nullable=False
     )
 
     hint_level: Mapped[int] = mapped_column(
-        Integer
+        Integer,
+        nullable=False
     )
 
     used_at: Mapped[datetime] = mapped_column(

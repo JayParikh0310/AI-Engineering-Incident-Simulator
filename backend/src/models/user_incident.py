@@ -23,16 +23,17 @@ class UserIncident(Base):
     )
 
     status: Mapped[str] = mapped_column(
-        String
+        String,
+        nullable=False
     )
 
     first_attempt_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True
     )
 
     completed_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True
     )
 
