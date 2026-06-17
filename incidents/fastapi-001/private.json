@@ -1,0 +1,27 @@
+{
+  "root_cause": {
+    "type": "circular_import",
+    "description": "main.py and routes.py import each other"
+  },
+  "skills": [
+    {
+      "name": "imports",
+      "weight": 1.0
+    }
+  ],
+  "learning_objectives": [
+    "Understand Python imports",
+    "Recognize circular dependencies",
+    "Debug startup failures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "text": "The issue occurs before FastAPI starts serving requests."
+    },
+    {
+      "level": 2,
+      "text": "Inspect module imports."
+    }
+  ]
+}

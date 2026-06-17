@@ -1,0 +1,20 @@
+{
+  "id": "fastapi-004",
+  "version": 1,
+  "title": "Orders API Startup Failure",
+  "difficulty": "easy",
+  "difficulty_score": 20,
+  "scenario": {
+    "service": "Orders API",
+    "severity": "medium",
+    "summary": "Service fails immediately after deployment."
+  },
+  "logs": [
+    "ImportError: cannot import router"
+  ],
+  "visible_files": [
+    "main.py",
+    "routes.py",
+    "db.py"
+  ]
+}
