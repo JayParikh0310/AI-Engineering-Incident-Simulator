@@ -116,13 +116,14 @@ def login(reqbody: UserModel, request: Request, response: Response, dbsess: Sess
         return result
 
 
-@httpapi.put("/auth/users", status_code=200, response_model=GeneralRespModel, dependencies=[Depends(JWTBearer)])
-def change_password(reqbody: UserChangePasswordModel, request: Request, response: Response, dbsess: Session = Depends(dbsession), jwtpayload=Depends(JWTBearer)):
+@httpapi.put("/auth/users", status_code=200, response_model=GeneralRespModel)
+def change_password(reqbody: UserChangePasswordModel, request: Request, response: Response, dbsess: Session = Depends(dbsession)):
     try:
         email = reqbody.email
         current_password = reqbody.current_password
         new_password = reqbody.new_password
-        jwtemail = jwtpayload.get('email')
+        # BUG: Authentication dependency removed, trusting body email
+        jwtemail = email
 
         if email != jwtemail:
             response.status_code, result = 400, {'status': 'failed', 'detail': 'bad request'}
@@ -150,12 +151,13 @@ def change_password(reqbody: UserChangePasswordModel, request: Request, response
         return result
 
 
-@httpapi.delete("/auth/users", status_code=200, response_model=GeneralRespModel, dependencies=[Depends(JWTBearer)], include_in_schema=False)
-def delete_user(reqbody: UserModel, request: Request, response: Response, dbsess: Session = Depends(dbsession), jwtpayload=Depends(JWTBearer)):
+@httpapi.delete("/auth/users", status_code=200, response_model=GeneralRespModel, include_in_schema=False)
+def delete_user(reqbody: UserModel, request: Request, response: Response, dbsess: Session = Depends(dbsession)):
     try:
         email = reqbody.email
         password = reqbody.password
-        jwtemail = jwtpayload.get('email')
+        # BUG: Authentication dependency removed, trusting body email
+        jwtemail = email
 
         if email != jwtemail:
             response.status_code, result = 400, {'status': 'failed', 'detail': 'bad request'}

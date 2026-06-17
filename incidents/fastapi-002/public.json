@@ -1,20 +1,21 @@
 {
   "id": "fastapi-002",
   "version": 1,
-  "title": "Orders API Startup Failure",
+  "title": "Persistent Database Connectivity Issues",
   "difficulty": "easy",
-  "difficulty_score": 20,
+  "difficulty_score": 15,
   "scenario": {
-    "service": "Orders API",
-    "severity": "medium",
-    "summary": "Service fails immediately after deployment."
+    "service": "Todo API",
+    "severity": "high",
+    "summary": "The application fails to start properly and keeps crashing with internal errors whenever it tries to initialize the database connection. The infrastructure team says the database is up."
   },
   "logs": [
-    "ImportError: cannot import router"
+    "sqlalchemy.exc.NoSuchModuleError: Can't load plugin: sqlalchemy.dialects:sqlite.wrongdriver",
+    "ERROR:    Error loading ASGI app. Could not import module 'main'."
   ],
   "visible_files": [
     "main.py",
-    "routes.py",
-    "db.py"
+    "database/database.py",
+    "requirements.txt"
   ]
 }

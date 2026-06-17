@@ -1,20 +1,21 @@
 {
   "id": "fastapi-004",
   "version": 1,
-  "title": "Orders API Startup Failure",
+  "title": "Unprotected User Management Endpoints",
   "difficulty": "easy",
-  "difficulty_score": 20,
+  "difficulty_score": 15,
   "scenario": {
-    "service": "Orders API",
-    "severity": "medium",
-    "summary": "Service fails immediately after deployment."
+    "service": "Auth Service",
+    "severity": "high",
+    "summary": "During a security audit, it was discovered that some sensitive user management endpoints can be accessed without any authorization headers. The team recently refactored the router and might have dropped some critical security decorators."
   },
   "logs": [
-    "ImportError: cannot import router"
+    "INFO:     127.0.0.1:54321 - \"PUT /auth/users HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:54321 - \"DELETE /auth/users HTTP/1.1\" 200 OK",
+    "WARNING:  Security Audit - Sensitive operation performed without Authorization header"
   ],
   "visible_files": [
-    "main.py",
-    "routes.py",
-    "db.py"
+    "auth/api.py",
+    "auth/utils.py"
   ]
 }

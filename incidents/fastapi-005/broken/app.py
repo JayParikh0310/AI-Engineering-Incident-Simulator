@@ -49,7 +49,7 @@ def add_post(db:Session=Depends(get_db),file:UploadFile=File(...)):
     new = upload_file(old_name=old_name,new_name=text)
     db.add(new)
     db.commit()
-    with open(f"./static/"+text,'wb') as f:
+    with open(f"./uploads/"+text,'wb') as f:
         f.write(contents)
     return {"filename":file.filename}
 

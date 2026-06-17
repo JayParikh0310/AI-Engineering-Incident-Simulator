@@ -1,27 +1,31 @@
 {
   "root_cause": {
-    "type": "circular_import",
-    "description": "main.py and routes.py import each other"
+    "type": "router_not_registered",
+    "description": "The todo router is imported in main.py but never registered using app.include_router()."
   },
   "skills": [
     {
-      "name": "imports",
+      "name": "fastapi_basics",
+      "weight": 0.5
+    },
+    {
+      "name": "routing",
       "weight": 1.0
     }
   ],
   "learning_objectives": [
-    "Understand Python imports",
-    "Recognize circular dependencies",
-    "Debug startup failures"
+    "Learn how to register APIRouters in FastAPI",
+    "Debug 404 errors for expected endpoints",
+    "Understand the structure of a multi-file FastAPI application"
   ],
   "hints": [
     {
       "level": 1,
-      "text": "The issue occurs before FastAPI starts serving requests."
+      "text": "Check if the main FastAPI application instance is aware of the todo routes."
     },
     {
       "level": 2,
-      "text": "Inspect module imports."
+      "text": "Look at main.py and see if app.include_router() is being called for the todo router."
     }
   ]
 }

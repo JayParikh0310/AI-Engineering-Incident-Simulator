@@ -1,20 +1,21 @@
 {
   "id": "fastapi-005",
   "version": 1,
-  "title": "Orders API Startup Failure",
+  "title": "Unexplained Upload Failures",
   "difficulty": "easy",
-  "difficulty_score": 20,
+  "difficulty_score": 15,
   "scenario": {
-    "service": "Orders API",
+    "service": "File Service",
     "severity": "medium",
-    "summary": "Service fails immediately after deployment."
+    "summary": "Users are reporting that they can no longer upload images to the platform. The application seems to accept the file but then crashes with an internal server error. No changes were made to the upload logic recently, but we did a cleanup of the server folders."
   },
   "logs": [
-    "ImportError: cannot import router"
+    "INFO:     127.0.0.1:54321 - \"POST / HTTP/1.1\" 500 Internal Server Error",
+    "ERROR:    Exception in ASGI application",
+    "FileNotFoundError: [Errno 2] No such file or directory: './uploads/my_file.txt'"
   ],
   "visible_files": [
-    "main.py",
-    "routes.py",
-    "db.py"
+    "app.py",
+    "README.md"
   ]
 }

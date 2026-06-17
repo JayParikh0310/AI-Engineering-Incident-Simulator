@@ -1,20 +1,22 @@
 {
   "id": "fastapi-003",
   "version": 1,
-  "title": "Orders API Startup Failure",
+  "title": "Authentication System Malfunction",
   "difficulty": "easy",
-  "difficulty_score": 20,
+  "difficulty_score": 15,
   "scenario": {
-    "service": "Orders API",
-    "severity": "medium",
-    "summary": "Service fails immediately after deployment."
+    "service": "Auth Service",
+    "severity": "high",
+    "summary": "Users are reporting that they cannot access protected resources. Even after a successful login, all subsequent requests to private endpoints return 403 Forbidden. The frontend team insists they are sending the token correctly."
   },
   "logs": [
-    "ImportError: cannot import router"
+    "2026-06-17 10:00:05 auth INFO login success for user: john@example.com",
+    "2026-06-17 10:00:06 auth WARNING invalid token signature detected for email: john@example.com",
+    "INFO:     127.0.0.1:54321 - \"GET /auth/users HTTP/1.1\" 403 Forbidden"
   ],
   "visible_files": [
-    "main.py",
-    "routes.py",
-    "db.py"
+    "auth/utils.py",
+    "auth/config.py",
+    "auth/api.py"
   ]
 }

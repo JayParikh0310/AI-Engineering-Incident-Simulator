@@ -99,7 +99,8 @@ def generate_jwt_token(email):
 
 def validate_jwt_token(credentials):
     try:
-        payload = jwt.decode(credentials, SECRET_KEY, algorithms=['HS256'])
+        # BUG: Using a different secret for validation
+        payload = jwt.decode(credentials, "WRONG_SECRET_KEY_FOR_TESTING", algorithms=['HS256'])
     except:
         payload = None
 

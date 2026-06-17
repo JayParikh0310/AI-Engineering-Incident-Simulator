@@ -1,20 +1,26 @@
 {
   "id": "fastapi-001",
   "version": 1,
-  "title": "Orders API Startup Failure",
+  "title": "Vanishing Todo Endpoints",
   "difficulty": "easy",
-  "difficulty_score": 20,
+  "difficulty_score": 15,
   "scenario": {
-    "service": "Orders API",
+    "service": "Todo API",
     "severity": "medium",
-    "summary": "Service fails immediately after deployment."
+    "summary": "The Todo application is running, but all /todos endpoints return 404 Not Found. The developers claim they implemented the routes, but they aren't showing up."
   },
   "logs": [
-    "ImportError: cannot import router"
+    "INFO:     Started server process [12345]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     Application startup complete.",
+    "INFO:     127.0.0.1:54321 - \"GET /todos HTTP/1.1\" 404 Not Found",
+    "INFO:     127.0.0.1:54321 - \"POST /todos/ HTTP/1.1\" 404 Not Found"
   ],
   "visible_files": [
     "main.py",
-    "routes.py",
-    "db.py"
+    "routers/todo.py",
+    "database/database.py",
+    "models/models.py",
+    "schemas/schemas.py"
   ]
 }

@@ -1,27 +1,31 @@
 {
   "root_cause": {
-    "type": "circular_import",
-    "description": "main.py and routes.py import each other"
+    "type": "jwt_secret_mismatch",
+    "description": "The validate_jwt_token function in auth/utils.py uses a hardcoded 'WRONG_SECRET_KEY_FOR_TESTING' instead of the global SECRET_KEY, causing all token validations to fail."
   },
   "skills": [
     {
-      "name": "imports",
+      "name": "security",
+      "weight": 1.0
+    },
+    {
+      "name": "jwt",
       "weight": 1.0
     }
   ],
   "learning_objectives": [
-    "Understand Python imports",
-    "Recognize circular dependencies",
-    "Debug startup failures"
+    "Understand JWT signing and verification",
+    "Debug authentication middleware failures",
+    "Recognize the importance of consistent configuration usage"
   ],
   "hints": [
     {
       "level": 1,
-      "text": "The issue occurs before FastAPI starts serving requests."
+      "text": "Login works, but the resulting token is rejected by other endpoints. This suggests a mismatch in how tokens are handled."
     },
     {
       "level": 2,
-      "text": "Inspect module imports."
+      "text": "Compare generate_jwt_token and validate_jwt_token in auth/utils.py. Are they using the same key to process the token?"
     }
   ]
 }
