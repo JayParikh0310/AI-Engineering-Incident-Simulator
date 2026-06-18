@@ -12,7 +12,7 @@ from src.schemas.auth_schema import AuthResponse, UserCreate, UserLogin, UserRes
 from src.services.auth_service import AuthService
 
 
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)

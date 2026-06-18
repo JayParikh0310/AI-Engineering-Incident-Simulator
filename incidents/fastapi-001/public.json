@@ -17,10 +17,20 @@
     "INFO:     127.0.0.1:54321 - \"POST /todos/ HTTP/1.1\" 404 Not Found"
   ],
   "visible_files": [
-    "main.py",
-    "routers/todo.py",
-    "database/database.py",
-    "models/models.py",
-    "schemas/schemas.py"
+  "main.py",
+  "routers/todo.py",
+  "database/database.py",
+  "models/models.py",
+  "schemas/schemas.py"
+  ],
+  "evaluation": {
+  "must_fix": [
+    "router_registration"
+  ],
+  "must_not_introduce": [
+    "syntax_error",
+    "circular_import"
   ]
-}
+  }
+  }
+
