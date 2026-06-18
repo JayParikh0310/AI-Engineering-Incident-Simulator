@@ -1,14 +1,25 @@
+from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from src.db.session import get_db
 from src.middleware.auth_middleware import get_current_user
 from src.models.user import User
-from src.schemas.incident_schema import IncidentCurrentResponse, IncidentHintResponse
+from src.schemas.incident_schema import IncidentCurrentResponse, IncidentHintResponse, IncidentPublic
 from src.services.incident_service import IncidentService
 
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
+
+
+@router.get("", response_model=List[IncidentPublic])
+def list_incidents(
+    db: Session = Depends(get_db)
+):
+    """
+    Returns a list of all available incidents (metadata only).
+    """
+    return IncidentService(db).list_all_incidents()
 
 
 @router.get("/current", response_model=IncidentCurrentResponse)

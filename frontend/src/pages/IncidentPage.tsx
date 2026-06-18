@@ -21,6 +21,7 @@ const IncidentPage: React.FC = () => {
       const data = await incidentService.getCurrentIncident();
       setIncident(data);
       setFileContents(data.files);
+      setHints(data.hints || []);
       if (data.visible_files.length > 0) {
         setSelectedFile(data.visible_files[0]);
       }
@@ -36,7 +37,7 @@ const IncidentPage: React.FC = () => {
     setIsRequestingHint(true);
     try {
       const hint = await incidentService.getHint(incident.id);
-      // Only add if not already in list (some hints might repeat if exhausted)
+      // Only add if not already in list
       setHints(prev => {
         if (prev.find(h => h.level === hint.level)) return prev;
         return [...prev, hint];
@@ -46,6 +47,10 @@ const IncidentPage: React.FC = () => {
     } finally {
       setIsRequestingHint(false);
     }
+  };
+
+  const handleSubmitFix = () => {
+    alert('Submission Pipeline (Sprint 4) is currently being initialized. Please stay tuned.');
   };
 
   if (isLoading) {
@@ -73,7 +78,10 @@ const IncidentPage: React.FC = () => {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-xs bg-white text-zinc-950 px-4 py-1.5 rounded font-bold hover:bg-zinc-200 transition-colors">
+          <button 
+            onClick={handleSubmitFix}
+            className="text-xs bg-white text-zinc-950 px-4 py-1.5 rounded font-bold hover:bg-zinc-200 transition-colors"
+          >
             SUBMIT FIX
           </button>
         </div>
@@ -136,14 +144,33 @@ const IncidentPage: React.FC = () => {
         {/* Right Sidebar - Info, Hints & Logs */}
         <aside className="w-80 border-l border-zinc-800 flex flex-col bg-zinc-900/20 shrink-0">
           {/* Scenario Info */}
-          <div className="p-4 border-b border-zinc-800">
-            <div className="flex items-center gap-2 text-zinc-400 mb-2">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-xs font-bold uppercase tracking-widest">Scenario</span>
+          <div className="p-4 border-b border-zinc-800 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 text-zinc-400 mb-2">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-xs font-bold uppercase tracking-widest">Scenario</span>
+              </div>
+              <p className="text-sm text-zinc-300 leading-relaxed italic border-l-2 border-zinc-700 pl-3">
+                "{incident.scenario.summary}"
+              </p>
             </div>
-            <p className="text-sm text-zinc-300 leading-relaxed italic border-l-2 border-zinc-700 pl-3">
-              "{incident.scenario.summary}"
-            </p>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-zinc-900/50 border border-zinc-800 p-2 rounded">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Service</span>
+                <span className="text-xs text-zinc-300 truncate block">{incident.scenario.service}</span>
+              </div>
+              <div className="bg-zinc-900/50 border border-zinc-800 p-2 rounded">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Severity</span>
+                <span className={`text-[10px] font-bold uppercase ${
+                  incident.scenario.severity === 'critical' ? 'text-red-500' :
+                  incident.scenario.severity === 'high' ? 'text-orange-500' :
+                  incident.scenario.severity === 'medium' ? 'text-yellow-500' : 'text-blue-500'
+                }`}>
+                  {incident.scenario.severity}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Hints Panel */}

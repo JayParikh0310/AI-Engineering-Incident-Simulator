@@ -1,1 +1,48 @@
 # Docker compose configuration
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: aeis_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aeis_user
+      POSTGRES_PASSWORD: aeis_password
+      POSTGRES_DB: aeis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aeis_user -d aeis_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aeis_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://aeis_user:aeis_password@db:5432/aeis_db
+      JWT_SECRET_KEY: dev-secret-key-change-this-in-production-minimum-32-chars
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      PRIMARY_MODEL: qwen/qwen3-32b
+      FALLBACK_MODEL: deepseek/deepseek-chat
+      DEBUG: "true"
+      APP_ENV: development
+      LOG_LEVEL: INFO
+      INCIDENTS_DIR: /app/incidents
+    volumes:
+      - ./incidents:/app/incidents:ro
+      - ./backend:/app
+    working_dir: /app
+
+volumes:
+  postgres_data:

@@ -69,6 +69,9 @@ class IncidentFull(BaseModel):
     public: IncidentPublic
     private: IncidentPrivate
 
+class IncidentHintResponse(BaseModel):
+    level: int
+    text: str
 
 class IncidentCurrentResponse(BaseModel):
     id: str
@@ -78,8 +81,7 @@ class IncidentCurrentResponse(BaseModel):
     logs: List[str]
     visible_files: List[str]
     files: Dict[str, str]
+    hints: List[IncidentHintResponse] = Field(default_factory=list)
 
 
-class IncidentHintResponse(BaseModel):
-    level: int
-    text: str
+

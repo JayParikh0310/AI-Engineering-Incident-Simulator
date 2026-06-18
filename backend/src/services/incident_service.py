@@ -1,16 +1,21 @@
 import uuid
-from typing import Optional
+from typing import Optional, List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.incident_engine.loader import loader
 from src.repositories.incident_repository import IncidentRepository
-from src.schemas.incident_schema import IncidentCurrentResponse, IncidentHintResponse
+from src.schemas.incident_schema import IncidentCurrentResponse, IncidentHintResponse, IncidentEvaluation, IncidentPublic
 
 
 class IncidentService:
     def __init__(self, db: Session):
         self.repo = IncidentRepository(db)
+
+    def list_all_incidents(self) -> List[IncidentPublic]:
+        all_incidents = loader.list_incidents()
+        all_incidents.sort(key=lambda x: x.id)
+        return all_incidents
 
     def get_current_incident(self, user_id: uuid.UUID) -> IncidentCurrentResponse:
         progress = self.repo.get_user_progress(user_id)
@@ -46,6 +51,15 @@ class IncidentService:
             if name in incident_full.public.visible_files
         }
 
+        # Fetch hints used by the user
+        hints_used = self.repo.get_hints_used(user_id, incident_id)
+        hint_responses = []
+        for hu in hints_used:
+            # Find the actual hint text from incident loader
+            hint_meta = next((h for h in incident_full.private.hints if h.level == hu.hint_level), None)
+            if hint_meta:
+                hint_responses.append(IncidentHintResponse(level=hu.hint_level, text=hint_meta.text))
+
         return IncidentCurrentResponse(
             id=incident_full.public.id,
             title=incident_full.public.title,
@@ -53,8 +67,15 @@ class IncidentService:
             scenario=incident_full.public.scenario,
             logs=incident_full.public.logs,
             visible_files=incident_full.public.visible_files,
-            files=filtered_files
+            files=filtered_files,
+            hints=hint_responses
         )
+
+    def get_incident_evaluation(self, incident_id: str) -> Optional[IncidentEvaluation]:
+        incident_full = loader.get_incident(incident_id)
+        if not incident_full:
+            return None
+        return incident_full.public.evaluation
 
     def get_hint(self, user_id: uuid.UUID, incident_id: str) -> IncidentHintResponse:
         incident_full = loader.get_incident(incident_id)

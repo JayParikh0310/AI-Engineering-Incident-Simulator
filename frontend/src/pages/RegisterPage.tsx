@@ -33,7 +33,7 @@ const RegisterPage: React.FC = () => {
       // After successful registration, the backend usually returns a token
       // and our service stores it. If registration just creates the user,
       // we'd need to log in. But our AuthResponse includes a token.
-      window.location.href = '/dashboard';
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       console.error('Registration error:', err);
       
