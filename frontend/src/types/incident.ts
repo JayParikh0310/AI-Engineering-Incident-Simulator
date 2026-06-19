@@ -26,6 +26,7 @@ export interface IncidentCurrentResponse {
   logs: string[];
   visible_files: string[];
   files: Record<string, string>;
+  hints: IncidentHintResponse[];
 }
 
 export interface IncidentHintResponse {

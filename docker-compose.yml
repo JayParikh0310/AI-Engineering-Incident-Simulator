@@ -5,9 +5,9 @@ services:
     container_name: aeis_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: aeis_user
-      POSTGRES_PASSWORD: aeis_password
-      POSTGRES_DB: aeis_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: incident_simulator
     ports:
       - "5432:5432"
     volumes:

@@ -118,19 +118,27 @@ def submit_attempt(
         progress_repo = IncidentRepository(db)
         progress = progress_repo.get_user_progress(current_user.id)
         if progress:
-            progress.incidents_completed += 1
+            # Only count as solved if this is the first time passing this incident
+            previous_passes = db.query(Attempt).filter(
+                Attempt.user_id == current_user.id,
+                Attempt.incident_id == incident_id,
+                Attempt.passed == True,
+                Attempt.id != attempt.id  # exclude the current attempt
+            ).count()
+
+            if previous_passes == 0:
+                progress.incidents_completed += 1
+
+                # Advance to next incident
+                all_incidents = sorted(loader.list_incidents(), key=lambda x: x.id)
+                current_index = next(
+                    (i for i, inc in enumerate(all_incidents) if inc.id == incident_id),
+                    None
+                )
+                if current_index is not None and current_index + 1 < len(all_incidents):
+                    progress.current_incident_id = all_incidents[current_index + 1].id
+
             progress.total_attempts += 1
-
-            # Advance to next incident alphabetically
-            all_incidents = sorted(loader.list_incidents(), key=lambda x: x.id)
-            current_index = next(
-                (i for i, inc in enumerate(all_incidents) if inc.id == incident_id),
-                None
-            )
-            if current_index is not None and current_index + 1 < len(all_incidents):
-                progress.current_incident_id = all_incidents[current_index + 1].id
-            # If it was the last incident, leave current_incident_id as-is
-
             db.commit()
 
     db.refresh(attempt)
