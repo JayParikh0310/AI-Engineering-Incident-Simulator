@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
-import type { User, LoginRequest } from '../types/auth';
+import type { User, LoginRequest, RegisterRequest } from '../types/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (data: LoginRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -34,13 +35,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, [isAuthenticated]);
 
-  const login = async (data: any) => {
+  const login = async (data: LoginRequest) => {
     try {
       const response = await authService.login(data);
       setIsAuthenticated(true);
       setUser(response.user);
     } catch (err) {
-      // Re-throw to be handled by the component, but ensure state is consistent
+      setIsAuthenticated(false);
+      setUser(null);
+      throw err;
+    }
+  };
+
+  const register = async (data: RegisterRequest) => {
+    try {
+      const response = await authService.register(data);
+      setIsAuthenticated(true);
+      setUser(response.user);
+    } catch (err) {
       setIsAuthenticated(false);
       setUser(null);
       throw err;
@@ -54,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

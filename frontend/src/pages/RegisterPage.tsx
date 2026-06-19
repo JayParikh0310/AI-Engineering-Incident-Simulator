@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/authService';
 import { Lock, User as UserIcon, Mail, Loader2, ArrowLeft } from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
@@ -11,7 +10,7 @@ const RegisterPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, register } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -25,19 +24,11 @@ const RegisterPage: React.FC = () => {
     setError(null);
 
     try {
-      await authService.register({
-        username,
-        email,
-        password,
-      });
-      // After successful registration, the backend usually returns a token
-      // and our service stores it. If registration just creates the user,
-      // we'd need to log in. But our AuthResponse includes a token.
-      navigate('/dashboard', { replace: true });
+      await register({ username, email, password });
+      // No navigate() needed here — the useEffect above fires
+      // automatically when isAuthenticated flips to true
     } catch (err: any) {
       console.error('Registration error:', err);
-      
-      // Clear password on failure
       setPassword('');
 
       if (err.response?.status === 422) {
@@ -129,8 +120,8 @@ const RegisterPage: React.FC = () => {
                 'CREATE ACCOUNT'
               )}
             </button>
-            
-            <button 
+
+            <button
               type="button"
               onClick={() => navigate('/login')}
               className="w-full flex items-center justify-center gap-2 text-xs text-zinc-500 hover:text-white transition-colors"

@@ -1,5 +1,6 @@
-"""
-Abstract LLM provider interface.
+from abc import ABC, abstractmethod
 
-All LLM providers must implement this contract.
-"""
+class LLMProvider(ABC):
+    @abstractmethod
+    def generate(self, prompt: str) -> str:
+        pass
