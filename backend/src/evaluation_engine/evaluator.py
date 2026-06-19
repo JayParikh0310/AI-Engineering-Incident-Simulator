@@ -38,7 +38,9 @@ class Evaluator:
     def _build_prompt(self, incident_data: Dict[str, Any], user_files: Dict[str, str]) -> str:
         # Construct the prompt as discussed
         return f"""
-Analyze the user's attempt to fix the incident and provide a structured JSON response.
+You must act as an evaluation engine.
+Analyze the user's attempt to fix the incident and provide ONLY a valid JSON response.
+Do NOT include any conversational text, explanations, or markdown formatting.
 
 Incident:
 Title: {incident_data['title']}
@@ -51,7 +53,7 @@ Golden Files:
 User Submission:
 {json.dumps(user_files)}
 
-Return ONLY a JSON object matching this schema:
+Output MUST be a JSON object matching this schema:
 {{
   "root_cause_fixed": boolean,
   "introduced_new_issues": boolean,
