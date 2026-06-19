@@ -49,8 +49,21 @@ const IncidentPage: React.FC = () => {
     }
   };
 
-  const handleSubmitFix = () => {
-    alert('Submission Pipeline (Sprint 4) is currently being initialized. Please stay tuned.');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ... inside handleSubmitFix
+  const handleSubmitFix = async () => {
+    if (!incident) return;
+    setIsSubmitting(true);
+    try {
+      const result = await incidentService.submitAttempt(incident.id, fileContents);
+      alert(`Submission ${result.passed ? 'PASSED!' : 'FAILED'}\nFeedback: ${result.feedback}`);
+    } catch (err) {
+      console.error('Failed to submit fix', err);
+      alert('Failed to submit fix. Check console for details.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {

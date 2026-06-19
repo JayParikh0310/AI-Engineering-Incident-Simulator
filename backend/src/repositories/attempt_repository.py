@@ -30,3 +30,9 @@ class AttemptRepository:
             )
             self.db.add(attempt_file)
         self.db.commit()
+
+    def count_attempts(self, user_id, incident_id) -> int:
+        return self.db.query(Attempt).filter(
+            Attempt.user_id == user_id,
+            Attempt.incident_id == incident_id
+        ).count()

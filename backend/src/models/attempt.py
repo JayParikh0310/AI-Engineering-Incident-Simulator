@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func
 
 from sqlalchemy import Integer, Float, Boolean, Text, DateTime, String, ForeignKey
@@ -51,5 +51,7 @@ class Attempt(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),  # Python-side default
+        server_default=func.now(),                    # keep this too
+        nullable=False,
     )

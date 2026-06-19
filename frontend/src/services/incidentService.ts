@@ -15,5 +15,10 @@ export const incidentService = {
   async getHint(incidentId: string): Promise<IncidentHintResponse> {
     const response = await api.post<IncidentHintResponse>(`/incidents/${incidentId}/hint`);
     return response.data;
+  },
+
+  async submitAttempt(incidentId: string, files: Record<string, string>): Promise<any> {
+    const response = await api.post(`/incidents/${incidentId}/submit`, { files });
+    return response.data;
   }
 };

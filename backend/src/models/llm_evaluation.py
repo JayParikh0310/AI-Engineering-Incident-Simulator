@@ -6,7 +6,7 @@ from sqlalchemy import ForeignKey, Text, DateTime, String
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from src.db.base import Base
@@ -49,5 +49,7 @@ class LLMEvaluation(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),  # add this
         server_default=func.now(),
+        nullable=False,
     )

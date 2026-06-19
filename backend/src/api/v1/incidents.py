@@ -1,14 +1,16 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.db.session import get_db
 from src.middleware.auth_middleware import get_current_user
 from src.models.user import User
+from src.models.attempt import Attempt
 from src.schemas.incident_schema import IncidentCurrentResponse, IncidentHintResponse, IncidentPublic
 from src.services.incident_service import IncidentService
 from src.schemas.attempt_schema import AttemptCreate, AttemptRead
 from src.repositories.attempt_repository import AttemptRepository
+from src.repositories.incident_repository import IncidentRepository
 from src.evaluation_engine.evaluator import Evaluator
 from src.incident_engine.loader import loader
 
@@ -61,32 +63,88 @@ def submit_attempt(
     Submits user files for an incident.
     Persists attempt data, then triggers LLM evaluation.
     """
+    # Guard: make sure incident exists before doing anything
+    incident = loader.get_incident(incident_id)
+    if not incident:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Incident {incident_id} not found"
+        )
+
     # 1. Persist attempt
     repo = AttemptRepository(db)
     attempt = repo.create_attempt(
         user_id=current_user.id,
         incident_id=incident_id,
-        attempt_number=1, # Need to track this properly later
+        attempt_number=repo.count_attempts(current_user.id, incident_id) + 1,
         passed=False,
         score=0.0,
         feedback="Pending evaluation"
     )
     repo.create_attempt_files(attempt.id, submission.files)
-    
-    # 2. Trigger Evaluation (Phase 3)
-    # Load incident context
-    incident = loader.get_incident(incident_id)
-    
+
+    # 2. Build incident context and run evaluation
     incident_data = {
         "title": incident.public.title,
         "scenario": incident.public.scenario,
         "logs": incident.public.logs,
-        "golden_files": {name: content for name, content in loader.get_golden_files(incident_id).items()}
+        "root_cause": incident.private.root_cause.description,  # add this
+        "broken_files": {                                         # add this
+            name: content
+            for name, content in loader.get_broken_files(incident_id).items()
+            if name in incident.public.visible_files
+        },
+        "golden_files": {
+            name: content
+            for name, content in loader.get_golden_files(incident_id).items()
+            if name in incident.public.visible_files
+        }
     }
-    
+
     evaluator = Evaluator(db)
-    evaluator.evaluate_attempt(str(attempt.id), incident_data, submission.files)
-    
-    # Re-fetch attempt to get updated pass/fail status
+    print("=== USER FILES KEYS ===", list(submission.files.keys()))
+    print("=== GOLDEN FILES SENT TO EVALUATOR ===", list(incident_data["golden_files"].keys()))
+
+    evaluation = evaluator.evaluate_attempt(attempt.id, incident_data, submission.files)
+
+    print("=== USER main.py ===")
+    print(submission.files.get("main.py", "NOT FOUND"))
+    print("=== GOLDEN main.py ===")
+    print(incident_data["golden_files"].get("main.py", "NOT FOUND"))
+
+    print("=== EVALUATION RESULT ===")
+    print("root_cause_fixed:", evaluation.root_cause_fixed)
+    print("introduced_new_issues:", evaluation.introduced_new_issues)
+    print("confidence:", evaluation.confidence)
+    print("summary:", evaluation.summary)
+    print("feedback:", evaluation.feedback)
+
+    # Fix 3: Update score from LLM confidence (was always 0.0)
+    attempt_record = db.query(Attempt).filter(Attempt.id == attempt.id).first()
+    if attempt_record:
+        attempt_record.score = evaluation.confidence
+        db.commit()
+
+    # Fix 2: Update user progress on pass
+    passed = evaluation.root_cause_fixed and not evaluation.introduced_new_issues
+    if passed:
+        progress_repo = IncidentRepository(db)
+        progress = progress_repo.get_user_progress(current_user.id)
+        if progress:
+            progress.incidents_completed += 1
+            progress.total_attempts += 1
+
+            # Advance to next incident alphabetically
+            all_incidents = sorted(loader.list_incidents(), key=lambda x: x.id)
+            current_index = next(
+                (i for i, inc in enumerate(all_incidents) if inc.id == incident_id),
+                None
+            )
+            if current_index is not None and current_index + 1 < len(all_incidents):
+                progress.current_incident_id = all_incidents[current_index + 1].id
+            # If it was the last incident, leave current_incident_id as-is
+
+            db.commit()
+
     db.refresh(attempt)
     return attempt

@@ -36,35 +36,76 @@ class Evaluator:
         return evaluation
 
     def _build_prompt(self, incident_data: Dict[str, Any], user_files: Dict[str, str]) -> str:
-        # Construct the prompt as discussed
-        return f"""
-You must act as an evaluation engine.
-Analyze the user's attempt to fix the incident and provide ONLY a valid JSON response.
-Do NOT include any conversational text, explanations, or markdown formatting.
+        import difflib
 
-Incident:
-Title: {incident_data['title']}
-Scenario: {incident_data['scenario']}
-Logs: {incident_data['logs']}
+        golden_files = incident_data["golden_files"]
+        broken_files = incident_data["broken_files"]  # we need to add this
 
-Golden Files:
-{json.dumps(incident_data['golden_files'])}
+        # Diff 1: what did the user actually change from the broken version?
+        user_changes = {}
+        for filename, broken_content in broken_files.items():
+            user_content = user_files.get(filename, "")
+            diff = list(difflib.unified_diff(
+                broken_content.splitlines(),
+                user_content.splitlines(),
+                fromfile=f"broken/{filename}",
+                tofile=f"user/{filename}",
+                lineterm=""
+            ))
+            user_changes[filename] = "\n".join(diff) if diff else "NO CHANGES MADE"
 
-User Submission:
-{json.dumps(user_files)}
+        # Diff 2: what does the correct fix look like?
+        correct_fix = {}
+        for filename, broken_content in broken_files.items():
+            golden_content = golden_files.get(filename, "")
+            diff = list(difflib.unified_diff(
+                broken_content.splitlines(),
+                golden_content.splitlines(),
+                fromfile=f"broken/{filename}",
+                tofile=f"golden/{filename}",
+                lineterm=""
+            ))
+            correct_fix[filename] = "\n".join(diff) if diff else "NO CHANGES NEEDED"
 
-Output MUST be a JSON object matching this schema:
-{{
-  "root_cause_fixed": boolean,
-  "introduced_new_issues": boolean,
-  "confidence": float,
-  "concepts_demonstrated": [string],
-  "concepts_missing": [string],
-  "summary": string,
-  "feedback": [string],
-  "recommended_skill_updates": {{ "skill_name": int }}
-}}
-"""
+        user_changes_text = "\n\n".join(
+            f"--- {fname} ---\n{diff}" for fname, diff in user_changes.items()
+        )
+        correct_fix_text = "\n\n".join(
+            f"--- {fname} ---\n{diff}" for fname, diff in correct_fix.items()
+        )
+
+        return f"""You are a STRICT code evaluation engine. You must evaluate whether the user fixed the actual bug.
+
+    INCIDENT: {incident_data['title']}
+    ERROR LOGS: {incident_data['logs']}
+    ROOT BUG DESCRIPTION: {incident_data['root_cause']}
+
+    WHAT THE USER CHANGED (diff from broken to their submission):
+    {user_changes_text}
+
+    WHAT THE CORRECT FIX LOOKS LIKE (diff from broken to golden):
+    {correct_fix_text}
+
+    EVALUATION INSTRUCTIONS:
+    Step 1: Look at "WHAT THE USER CHANGED". If all files show "NO CHANGES MADE", root_cause_fixed MUST be false.
+    Step 2: Determine if the user's change actually resolves the ERROR LOGS shown above.
+    Step 3: The user does NOT need to match the golden fix exactly — but their change must genuinely fix the reported error.
+    Step 4: If the user changed something unrelated to the error, root_cause_fixed is false.
+    Step 5: If the user deleted code or broke something, check introduced_new_issues.
+
+    BE STRICT. Do not invent reasons to pass the user. The error logs are ground truth — if their change would not stop those errors, it fails.
+
+    Respond ONLY with valid JSON, no markdown:
+    {{
+    "root_cause_fixed": boolean,
+    "introduced_new_issues": boolean,
+    "confidence": float between 0 and 1,
+    "concepts_demonstrated": [list of strings],
+    "concepts_missing": [list of strings],
+    "summary": "one sentence — what did the user change and does it fix the error?",
+    "feedback": [2-3 specific feedback strings],
+    "recommended_skill_updates": {{"skill_name": score_0_to_10}}
+    }}"""
 
     def _parse_json(self, raw_response: str) -> Dict[str, Any]:
         # Clean response if LLM added markdown code blocks
