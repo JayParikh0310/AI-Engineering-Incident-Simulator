@@ -102,22 +102,9 @@ def submit_attempt(
     }
 
     evaluator = Evaluator(db)
-    print("=== USER FILES KEYS ===", list(submission.files.keys()))
-    print("=== GOLDEN FILES SENT TO EVALUATOR ===", list(incident_data["golden_files"].keys()))
 
     evaluation = evaluator.evaluate_attempt(attempt.id, incident_data, submission.files)
 
-    print("=== USER main.py ===")
-    print(submission.files.get("main.py", "NOT FOUND"))
-    print("=== GOLDEN main.py ===")
-    print(incident_data["golden_files"].get("main.py", "NOT FOUND"))
-
-    print("=== EVALUATION RESULT ===")
-    print("root_cause_fixed:", evaluation.root_cause_fixed)
-    print("introduced_new_issues:", evaluation.introduced_new_issues)
-    print("confidence:", evaluation.confidence)
-    print("summary:", evaluation.summary)
-    print("feedback:", evaluation.feedback)
 
     # Fix 3: Update score from LLM confidence (was always 0.0)
     attempt_record = db.query(Attempt).filter(Attempt.id == attempt.id).first()
