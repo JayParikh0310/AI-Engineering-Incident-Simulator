@@ -9,6 +9,32 @@ import type { UserProgress } from '../types/progress';
 import type { IncidentPublic } from '../types/incident';
 import ProgressBar from '../components/ProgressBar';
 
+const highlightErrorKeywords = (text: string, isLocked: boolean) => {
+  if (isLocked) return text;
+  const keywords = [
+    'circular import', 'timeout', 'failed', 'error', 'bug', 'crash', 'broken',
+    'critical', 'exception', '404', '422', 'mismatch', 'leak', 'corrupted', 'detached'
+  ];
+  // Escape keywords for regex
+  const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi');
+  
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const isMatch = keywords.some(k => k.toLowerCase() === part.toLowerCase());
+        return isMatch ? (
+          <span key={i} className="text-red-400 font-semibold font-mono bg-red-950/20 px-1 rounded border border-red-900/30 mx-0.5 text-[12px]">
+            {part}
+          </span>
+        ) : (
+          part
+        );
+      })}
+    </>
+  );
+};
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -18,6 +44,20 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
   const [lockedTooltip, setLockedTooltip] = useState<string | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Monitor scrolling to animate top scroll-progress bar
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalScroll > 0) {
+        const currentProgress = (window.pageYOffset / totalScroll) * 100;
+        setScrollProgress(currentProgress);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,6 +133,43 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-20">
+      <style>{`
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+        @keyframes activeGlow {
+          0%, 100% { border-color: rgba(255, 255, 255, 0.15); box-shadow: 0 0 12px rgba(255, 255, 255, 0.02); }
+          50% { border-color: rgba(255, 255, 255, 0.35); box-shadow: 0 0 24px rgba(255, 255, 255, 0.08); }
+        }
+        @keyframes assignmentGlow {
+          0%, 100% { border-color: rgba(239, 68, 68, 0.25); box-shadow: 0 0 12px rgba(239, 68, 68, 0.02); }
+          50% { border-color: rgba(239, 68, 68, 0.55); box-shadow: 0 0 24px rgba(239, 68, 68, 0.14); }
+        }
+        .active-glow-card {
+          animation: activeGlow 3s infinite ease-in-out;
+        }
+        .assignment-glow-card {
+          animation: assignmentGlow 2.5s infinite ease-in-out;
+        }
+        /* Custom sleek terminal scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #09090b;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #27272a;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #3f3f46;
+        }
+        html {
+          scroll-behavior: smooth;
+        }
+      `}</style>
+
       {/* Header */}
       <header className="h-16 border-b border-zinc-800 flex items-center px-8 justify-between bg-zinc-900/50 sticky top-0 z-10 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -116,14 +193,21 @@ const DashboardPage: React.FC = () => {
 
       <main className="max-w-6xl mx-auto p-8 space-y-12">
         {/* Welcome Section */}
-        <section>
-          <h2 className="text-3xl font-bold mb-2 tracking-tight">System Ready, Engineer.</h2>
-          <p className="text-zinc-500 max-w-2xl">Select an active simulation from the catalog below to begin troubleshooting. Complete incidents in order to unlock the next challenge.</p>
+        <section className="border-l-2 border-red-500/60 pl-6 py-2 bg-gradient-to-r from-red-950/10 to-transparent">
+          <div className="flex items-center gap-3 mb-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+            <h2 className="text-2xl lg:text-3xl font-mono font-black tracking-tight text-white uppercase">
+              GET READY, ENGINEER.
+            </h2>
+          </div>
+          <p className="text-zinc-500 max-w-3xl text-sm leading-relaxed">
+            Telemetry reports multiple <span className="text-red-400 font-mono font-bold bg-red-950/20 px-1.5 py-0.5 border border-red-900/30 rounded">CRITICAL ANOMALIES</span> inside our production API servers. Analyze log outputs, pinpoint system errors, and commit golden patches. <span className="text-zinc-300">Failure is not an option.</span> Secure next clearance levels to proceed.
+          </p>
         </section>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group hover:-translate-y-1 hover:border-zinc-700/80 hover:shadow-2xl hover:shadow-black/40 transition-all duration-350 ease-out cursor-default">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <CheckCircle className="h-24 w-24" />
             </div>
@@ -131,9 +215,9 @@ const DashboardPage: React.FC = () => {
               <CheckCircle className="h-5 w-5" />
               <span className="text-xs font-bold uppercase tracking-widest">Incidents Resolved</span>
             </div>
-            <div className="text-4xl font-mono font-bold">{progress?.incidents_completed ?? 0}</div>
+            <div className="text-4xl font-mono font-bold text-white">{progress?.incidents_completed ?? 0}</div>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group hover:-translate-y-1 hover:border-zinc-700/80 hover:shadow-2xl hover:shadow-black/40 transition-all duration-350 ease-out cursor-default">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <BookOpen className="h-24 w-24" />
             </div>
@@ -141,9 +225,9 @@ const DashboardPage: React.FC = () => {
               <BarChart3 className="h-5 w-5" />
               <span className="text-xs font-bold uppercase tracking-widest">Hints Used</span>
             </div>
-            <div className="text-4xl font-mono font-bold">{progress?.hints_used ?? 0}</div>
+            <div className="text-4xl font-mono font-bold text-white">{progress?.hints_used ?? 0}</div>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group hover:-translate-y-1 hover:border-zinc-700/80 hover:shadow-2xl hover:shadow-black/40 transition-all duration-350 ease-out cursor-default">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <Terminal className="h-24 w-24" />
             </div>
@@ -151,8 +235,18 @@ const DashboardPage: React.FC = () => {
               <Terminal className="h-5 w-5" />
               <span className="text-xs font-bold uppercase tracking-widest">Active Status</span>
             </div>
-            <div className="text-lg font-bold truncate">
-              {progress?.current_incident_id ? 'IN FIELD' : 'IDLE'}
+            <div className="text-lg font-mono font-bold truncate flex items-center gap-2">
+              {progress?.current_incident_id ? (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-green-400">IN FIELD</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
+                  <span className="text-zinc-500">IDLE</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -176,12 +270,12 @@ const DashboardPage: React.FC = () => {
 
         {/* Active Assignment */}
         {progress?.current_incident_id && !progress.completed_incident_ids?.includes(progress.current_incident_id) && (
-          <section className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-            <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-white/[0.02]">
+          <section className="bg-zinc-900 border border-red-500/20 rounded-lg overflow-hidden assignment-glow-card hover:-translate-y-1 hover:border-red-500/50 hover:shadow-2xl hover:shadow-red-950/20 transition-all duration-300 ease-out animate-fade-in-up delay-3">
+            <div className="p-6 flex justify-between items-center bg-gradient-to-r from-red-950/10 to-transparent">
               <div>
                 <div className="flex items-center gap-2 text-white mb-1">
-                  <Play className="h-4 w-4 fill-white" />
-                  <h3 className="text-xl font-bold">Active Assignment</h3>
+                  <Play className="h-4 w-4 fill-white text-red-500" />
+                  <h3 className="text-xl font-bold font-mono tracking-tight uppercase">Active Assignment</h3>
                 </div>
                 <p className="text-sm text-zinc-400 font-mono">
                   {progress.current_incident_title} ({progress.current_incident_id})
@@ -189,7 +283,7 @@ const DashboardPage: React.FC = () => {
               </div>
               <button
                 onClick={() => navigate('/incident')}
-                className="bg-white text-zinc-950 px-6 py-2 rounded font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
+                className="bg-white text-zinc-950 px-6 py-2 rounded font-bold hover:bg-zinc-100 transition-all hover:scale-[1.03] shadow-lg shadow-white/5 active:scale-[0.98]"
               >
                 RESUME TERMINAL
               </button>
@@ -198,7 +292,7 @@ const DashboardPage: React.FC = () => {
         )}
 
         {/* Incident Catalog */}
-        <section className="space-y-6">
+        <section className="space-y-6 animate-fade-in-up delay-4">
           <div className="flex items-center gap-3">
             <BookOpen className="h-5 w-5 text-zinc-400" />
             <h3 className="text-xl font-bold uppercase tracking-tighter">Incident Catalog</h3>
@@ -214,14 +308,14 @@ const DashboardPage: React.FC = () => {
               return (
                 <div
                   key={incident.id}
-                  className={`border rounded-lg p-6 transition-all relative ${
+                  className={`border rounded-lg p-6 transition-all duration-300 ease-out relative ${
                     isLocked
                       ? 'bg-zinc-950/60 border-zinc-800/50 opacity-60'
                       : isCompleted
-                      ? 'bg-zinc-900/40 border-zinc-700'
+                      ? 'bg-zinc-900/40 border-zinc-700 hover:-translate-y-1 hover:border-zinc-500 hover:shadow-2xl hover:shadow-black/60'
                       : isActive
-                      ? 'bg-zinc-900 border-white/20 ring-1 ring-white/10'
-                      : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
+                      ? 'bg-zinc-900 active-glow-card hover:-translate-y-1'
+                      : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-600/80 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/60'
                   }`}
                 >
                   {/* Completed badge */}
@@ -258,7 +352,7 @@ const DashboardPage: React.FC = () => {
                   </div>
 
                   <p className={`text-sm mb-6 line-clamp-2 italic leading-relaxed ${isLocked ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                    "{incident.scenario.summary}"
+                    "{highlightErrorKeywords(incident.scenario.summary, isLocked)}"
                   </p>
 
                   <div className="flex items-center justify-between">
