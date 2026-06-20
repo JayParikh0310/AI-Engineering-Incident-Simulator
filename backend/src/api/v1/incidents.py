@@ -107,10 +107,6 @@ def submit_attempt(
 
     evaluation = evaluator.evaluate_attempt(attempt.id, incident_data, submission.files)
 
-    print("=== RECOMMENDED SKILL UPDATES ===")
-    print(evaluation.recommended_skill_updates)
-    print("=== EVALUATION PASSED ===", evaluation.root_cause_fixed)
-
     if evaluation.recommended_skill_updates:
         skill_service = SkillService(db)
         skill_service.update_user_skills(current_user.id, evaluation.recommended_skill_updates)
