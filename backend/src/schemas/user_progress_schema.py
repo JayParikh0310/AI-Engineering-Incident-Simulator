@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
@@ -15,3 +15,4 @@ class UserProgressResponse(BaseModel):
 
 class UserProgressDetailResponse(UserProgressResponse):
     current_incident_title: Optional[str] = None
+    completed_incident_ids: List[str] = []

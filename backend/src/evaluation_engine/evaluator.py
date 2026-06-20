@@ -39,7 +39,7 @@ class Evaluator:
         import difflib
 
         golden_files = incident_data["golden_files"]
-        broken_files = incident_data["broken_files"]  # we need to add this
+        broken_files = incident_data["broken_files"]
 
         # Diff 1: what did the user actually change from the broken version?
         user_changes = {}
@@ -74,38 +74,49 @@ class Evaluator:
             f"--- {fname} ---\n{diff}" for fname, diff in correct_fix.items()
         )
 
+        # Build controlled skill list from private.json
+        skills = incident_data.get("skills_tested", [])
+        skill_names = [s["name"] for s in skills]
+        skills_list = ", ".join(skill_names)
+
         return f"""You are a STRICT code evaluation engine. You must evaluate whether the user fixed the actual bug.
 
-    INCIDENT: {incident_data['title']}
-    ERROR LOGS: {incident_data['logs']}
-    ROOT BUG DESCRIPTION: {incident_data['root_cause']}
+INCIDENT: {incident_data['title']}
+ERROR LOGS: {incident_data['logs']}
+ROOT BUG DESCRIPTION: {incident_data['root_cause']}
 
-    WHAT THE USER CHANGED (diff from broken to their submission):
-    {user_changes_text}
+WHAT THE USER CHANGED (diff from broken to their submission):
+{user_changes_text}
 
-    WHAT THE CORRECT FIX LOOKS LIKE (diff from broken to golden):
-    {correct_fix_text}
+WHAT THE CORRECT FIX LOOKS LIKE (diff from broken to golden):
+{correct_fix_text}
 
-    EVALUATION INSTRUCTIONS:
-    Step 1: Look at "WHAT THE USER CHANGED". If all files show "NO CHANGES MADE", root_cause_fixed MUST be false.
-    Step 2: Determine if the user's change actually resolves the ERROR LOGS shown above.
-    Step 3: The user does NOT need to match the golden fix exactly — but their change must genuinely fix the reported error.
-    Step 4: If the user changed something unrelated to the error, root_cause_fixed is false.
-    Step 5: If the user deleted code or broke something, check introduced_new_issues.
+EVALUATION INSTRUCTIONS:
+Step 1: Look at "WHAT THE USER CHANGED". If all files show "NO CHANGES MADE", root_cause_fixed MUST be false.
+Step 2: Determine if the user's change actually resolves the ERROR LOGS shown above.
+Step 3: The user does NOT need to match the golden fix exactly — but their change must genuinely fix the reported error.
+Step 4: If the user changed something unrelated to the error, root_cause_fixed is false.
+Step 5: If the user deleted code or broke something, check introduced_new_issues.
 
-    BE STRICT. Do not invent reasons to pass the user. The error logs are ground truth — if their change would not stop those errors, it fails.
+BE STRICT. Do not invent reasons to pass the user. The error logs are ground truth — if their change would not stop those errors, it fails.
 
-    Respond ONLY with valid JSON, no markdown:
-    {{
-    "root_cause_fixed": boolean,
-    "introduced_new_issues": boolean,
-    "confidence": float between 0 and 1,
-    "concepts_demonstrated": [list of strings],
-    "concepts_missing": [list of strings],
-    "summary": "one sentence — what did the user change and does it fix the error?",
-    "feedback": [2-3 specific feedback strings],
-    "recommended_skill_updates": {{"skill_name": score_0_to_10}}
-    }}"""
+SKILL SCORING RULES:
+- You MUST only use these exact skill names, no others: {skills_list}
+- Score each skill 0-10 based on how well the user demonstrated understanding of it
+- If root_cause_fixed is true, scores should generally be 6-10
+- If root_cause_fixed is false, scores should generally be 0-4
+
+Respond ONLY with valid JSON, no markdown:
+{{
+"root_cause_fixed": boolean,
+"introduced_new_issues": boolean,
+"confidence": float between 0 and 1,
+"concepts_demonstrated": [list of strings],
+"concepts_missing": [list of strings],
+"summary": "one sentence — what did the user change and does it fix the error?",
+"feedback": [2-3 specific feedback strings],
+"recommended_skill_updates": {{"skill_name": score_0_to_10}}
+}}"""
 
     def _parse_json(self, raw_response: str) -> Dict[str, Any]:
         # Clean response if LLM added markdown code blocks

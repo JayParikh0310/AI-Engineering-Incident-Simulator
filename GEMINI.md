@@ -36,5 +36,7 @@ The `docs/` folder is the **absolute source of truth** for this project.
 - `backend/src/incident_engine/`: Logic for loading and managing incidents.
 - `incidents/`: The raw data for simulation scenarios.
 
+### DO NOT CHANGE docker-compose.yaml under any circumstances
+
 ---
 *Last Updated: June 18, 2026*

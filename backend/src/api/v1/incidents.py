@@ -13,6 +13,7 @@ from src.repositories.attempt_repository import AttemptRepository
 from src.repositories.incident_repository import IncidentRepository
 from src.evaluation_engine.evaluator import Evaluator
 from src.incident_engine.loader import loader
+from src.services.skill_service import SkillService
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -88,8 +89,9 @@ def submit_attempt(
         "title": incident.public.title,
         "scenario": incident.public.scenario,
         "logs": incident.public.logs,
-        "root_cause": incident.private.root_cause.description,  # add this
-        "broken_files": {                                         # add this
+        "root_cause": incident.private.root_cause.description,
+        "skills_tested": [{"name": s.name, "weight": s.weight} for s in incident.private.skills],  # add this
+        "broken_files": {
             name: content
             for name, content in loader.get_broken_files(incident_id).items()
             if name in incident.public.visible_files
@@ -100,11 +102,18 @@ def submit_attempt(
             if name in incident.public.visible_files
         }
     }
-
+    
     evaluator = Evaluator(db)
 
     evaluation = evaluator.evaluate_attempt(attempt.id, incident_data, submission.files)
 
+    print("=== RECOMMENDED SKILL UPDATES ===")
+    print(evaluation.recommended_skill_updates)
+    print("=== EVALUATION PASSED ===", evaluation.root_cause_fixed)
+
+    if evaluation.recommended_skill_updates:
+        skill_service = SkillService(db)
+        skill_service.update_user_skills(current_user.id, evaluation.recommended_skill_updates)
 
     # Fix 3: Update score from LLM confidence (was always 0.0)
     attempt_record = db.query(Attempt).filter(Attempt.id == attempt.id).first()
@@ -142,4 +151,7 @@ def submit_attempt(
             db.commit()
 
     db.refresh(attempt)
+
+    attempt.recommended_skill_updates = evaluation.recommended_skill_updates or {}
+
     return attempt

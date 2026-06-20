@@ -40,9 +40,18 @@ Current Sprint: Sprint 5
 
 ## Next Tasks
 1. **Sprint 5 - Reports + Skills**
-    - Implement `skill_service.py` to parse LLM recommendations.
-    - Implement `report_service.py` to generate incident progress reports.
-    - Update `user_skills` and `user_progress` database tracking.
-    - Expose `GET /api/v1/reports/{user_id}/progress` endpoint.
-    - **New:** Implement Frontend Progress Bar for user skills/progression.
+   
+   Phase 1: Backend Services (Skills & Reports)
+   - Implement `skill_service.py` to parse LLM recommendations and update `user_skills`.
+   - Implement `report_service.py` to aggregate user performance data.
+   
+   Phase 2: Reporting API
+   - Expose `GET /api/v1/reports/{user_id}/progress` endpoint.
+   
+   Phase 3: Frontend Data Integration
+   - Fetch progress/skill data and implement the Frontend Progress Bar component.
+   
+   Phase 4: UI/UX Refinement
+   - Replace the `alert()` submission feedback with a structured "Submission Result" UI component.
+   - Integrate "Skill Growth" and "Knowledge Gaps" visualization into the post-submission UI based on evaluation data.
 

@@ -1,29 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Terminal, CheckCircle, BarChart3, User, LogOut, Loader2, Play, BookOpen } from 'lucide-react';
+import { Terminal, CheckCircle, BarChart3, User, LogOut, Loader2, Play, BookOpen, BrainCircuit, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
 import { incidentService } from '../services/incidentService';
 import type { UserProgressDetail } from '../types/user';
+import type { UserProgress } from '../types/progress';
 import type { IncidentPublic } from '../types/incident';
+import ProgressBar from '../components/ProgressBar';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [progress, setProgress] = useState<UserProgressDetail | null>(null);
+  const [skillProgress, setSkillProgress] = useState<UserProgress | null>(null);
   const [availableIncidents, setAvailableIncidents] = useState<IncidentPublic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [lockedTooltip, setLockedTooltip] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!user) return;
         const [progressData, incidentsData] = await Promise.all([
           userService.getMyProgress(),
-          incidentService.getAllIncidents()
+          incidentService.getAllIncidents(),
         ]);
         setProgress(progressData);
         setAvailableIncidents(incidentsData);
+
+        // Skill report is optional
+        try {
+          const skillData = await userService.getProgressReport();
+          setSkillProgress(skillData);
+        } catch {
+          setSkillProgress(null);
+        }
       } catch (err) {
         console.error('Failed to fetch dashboard data', err);
       } finally {
@@ -31,7 +44,7 @@ const DashboardPage: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -45,10 +58,24 @@ const DashboardPage: React.FC = () => {
       navigate('/incident');
     } catch (err) {
       console.error('Failed to assign incident', err);
-      alert('Failed to start incident. Please try again.');
     } finally {
       setIsAssigning(false);
     }
+  };
+
+  // Determine incident state: 'active' | 'completed' | 'unlocked' | 'locked'
+  const getIncidentState = (incident: IncidentPublic, index: number): 'active' | 'completed' | 'unlocked' | 'locked' => {
+    if (!progress) return index === 0 ? 'unlocked' : 'locked';
+
+    const isCompleted = progress.completed_incident_ids?.includes(incident.id);
+    const isActive = progress.current_incident_id === incident.id;
+    const incidentsCompleted = progress.incidents_completed ?? 0;
+
+    if (isCompleted) return 'completed';
+    if (isActive) return 'active';
+    // Unlocked if the user has completed enough incidents to reach this one
+    if (index <= incidentsCompleted) return 'unlocked';
+    return 'locked';
   };
 
   if (!user) return null;
@@ -60,6 +87,9 @@ const DashboardPage: React.FC = () => {
       </div>
     );
   }
+
+  // Sort incidents consistently (same order as backend)
+  const sortedIncidents = [...availableIncidents].sort((a, b) => a.id.localeCompare(b.id));
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-20">
@@ -74,7 +104,7 @@ const DashboardPage: React.FC = () => {
             <User className="h-4 w-4" />
             <span>{user.username}</span>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
           >
@@ -88,7 +118,7 @@ const DashboardPage: React.FC = () => {
         {/* Welcome Section */}
         <section>
           <h2 className="text-3xl font-bold mb-2 tracking-tight">System Ready, Engineer.</h2>
-          <p className="text-zinc-500 max-w-2xl">Select an active simulation from the catalog below to begin troubleshooting. Your progress and performance metrics are tracked in real-time.</p>
+          <p className="text-zinc-500 max-w-2xl">Select an active simulation from the catalog below to begin troubleshooting. Complete incidents in order to unlock the next challenge.</p>
         </section>
 
         {/* Stats Grid */}
@@ -101,7 +131,7 @@ const DashboardPage: React.FC = () => {
               <CheckCircle className="h-5 w-5" />
               <span className="text-xs font-bold uppercase tracking-widest">Incidents Resolved</span>
             </div>
-            <div className="text-4xl font-mono font-bold">{progress?.incidents_completed || 0}</div>
+            <div className="text-4xl font-mono font-bold">{progress?.incidents_completed ?? 0}</div>
           </div>
           <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -111,7 +141,7 @@ const DashboardPage: React.FC = () => {
               <BarChart3 className="h-5 w-5" />
               <span className="text-xs font-bold uppercase tracking-widest">Hints Used</span>
             </div>
-            <div className="text-4xl font-mono font-bold">{progress?.hints_used || 0}</div>
+            <div className="text-4xl font-mono font-bold">{progress?.hints_used ?? 0}</div>
           </div>
           <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -127,8 +157,25 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Active Assignment (Only show if one exists) */}
-        {progress?.current_incident_id && (
+        {/* Skill Mastery */}
+        <section className="bg-zinc-900 border border-zinc-800 p-8 rounded-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <BrainCircuit className="h-5 w-5 text-zinc-400" />
+            <h3 className="text-xl font-bold uppercase tracking-tighter">Skill Mastery</h3>
+          </div>
+          {skillProgress && Object.keys(skillProgress.skills).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {Object.entries(skillProgress.skills).map(([name, data]) => (
+                <ProgressBar key={name} label={name.replace(/_/g, ' ')} value={data.mastery} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500 italic">No skill data yet. Complete an incident to start tracking.</p>
+          )}
+        </section>
+
+        {/* Active Assignment */}
+        {progress?.current_incident_id && !progress.completed_incident_ids?.includes(progress.current_incident_id) && (
           <section className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
             <div className="p-6 border-b border-zinc-800 flex justify-between items-center bg-white/[0.02]">
               <div>
@@ -140,7 +187,7 @@ const DashboardPage: React.FC = () => {
                   {progress.current_incident_title} ({progress.current_incident_id})
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/incident')}
                 className="bg-white text-zinc-950 px-6 py-2 rounded font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
               >
@@ -156,55 +203,112 @@ const DashboardPage: React.FC = () => {
             <BookOpen className="h-5 w-5 text-zinc-400" />
             <h3 className="text-xl font-bold uppercase tracking-tighter">Incident Catalog</h3>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {availableIncidents.map((incident) => {
-              const isActive = progress?.current_incident_id === incident.id;
-              
+            {sortedIncidents.map((incident, index) => {
+              const state = getIncidentState(incident, index);
+              const isLocked = state === 'locked';
+              const isCompleted = state === 'completed';
+              const isActive = state === 'active';
+
               return (
-                <div 
+                <div
                   key={incident.id}
-                  className={`border rounded-lg p-6 transition-all ${
-                    isActive 
-                      ? 'bg-zinc-900 border-white/20 ring-1 ring-white/10' 
+                  className={`border rounded-lg p-6 transition-all relative ${
+                    isLocked
+                      ? 'bg-zinc-950/60 border-zinc-800/50 opacity-60'
+                      : isCompleted
+                      ? 'bg-zinc-900/40 border-zinc-700'
+                      : isActive
+                      ? 'bg-zinc-900 border-white/20 ring-1 ring-white/10'
                       : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700'
                   }`}
                 >
+                  {/* Completed badge */}
+                  {isCompleted && (
+                    <div className="absolute top-4 right-4 flex items-center gap-1 text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-[10px] font-bold uppercase">Completed</span>
+                    </div>
+                  )}
+
+                  {/* Locked icon */}
+                  {isLocked && (
+                    <div className="absolute top-4 right-4 text-zinc-600">
+                      <Lock className="h-4 w-4" />
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="font-bold text-lg">{incident.title}</h4>
+                    <div className="pr-16">
+                      <h4 className={`font-bold text-lg ${isLocked ? 'text-zinc-500' : 'text-white'}`}>
+                        {incident.title}
+                      </h4>
                       <p className="text-xs font-mono text-zinc-500">{incident.id}</p>
                     </div>
-                    <span className={`text-[9px] px-2 py-0.5 rounded border uppercase font-bold ${
-                      incident.difficulty === 'easy' ? 'text-green-400 border-green-900/50 bg-green-900/10' : 
-                      incident.difficulty === 'medium' ? 'text-yellow-400 border-yellow-900/50 bg-yellow-900/10' : 
-                      'text-red-400 border-red-900/50 bg-red-900/10'
-                    }`}>
-                      {incident.difficulty}
-                    </span>
+                    {!isCompleted && !isLocked && (
+                      <span className={`text-[9px] px-2 py-0.5 rounded border uppercase font-bold ${
+                        incident.difficulty === 'easy' ? 'text-green-400 border-green-900/50 bg-green-900/10' :
+                        incident.difficulty === 'medium' ? 'text-yellow-400 border-yellow-900/50 bg-yellow-900/10' :
+                        'text-red-400 border-red-900/50 bg-red-900/10'
+                      }`}>
+                        {incident.difficulty}
+                      </span>
+                    )}
                   </div>
-                  
-                  <p className="text-sm text-zinc-400 mb-6 line-clamp-2 italic leading-relaxed">
+
+                  <p className={`text-sm mb-6 line-clamp-2 italic leading-relaxed ${isLocked ? 'text-zinc-600' : 'text-zinc-400'}`}>
                     "{incident.scenario.summary}"
                   </p>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
                       <span className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">FastAPI</span>
                       <span className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">V1</span>
                     </div>
-                    
-                    <button
-                      onClick={() => isActive ? navigate('/incident') : handleStartIncident(incident.id)}
-                      disabled={isAssigning}
-                      className={`text-xs px-4 py-1.5 rounded font-bold transition-all flex items-center gap-2 ${
-                        isActive 
-                          ? 'bg-white text-zinc-950' 
-                          : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                      }`}
-                    >
-                      {isActive ? 'CONTINUE' : 'START SIMULATION'}
-                    </button>
+
+                    {/* Action button based on state */}
+                    {isLocked ? (
+                      <div className="relative">
+                        <button
+                          onMouseEnter={() => setLockedTooltip(incident.id)}
+                          onMouseLeave={() => setLockedTooltip(null)}
+                          className="text-xs px-4 py-1.5 rounded font-bold bg-zinc-800/50 text-zinc-600 cursor-not-allowed"
+                          disabled
+                        >
+                          LOCKED
+                        </button>
+                        {lockedTooltip === incident.id && (
+                          <div className="absolute bottom-full right-0 mb-2 w-48 bg-zinc-800 border border-zinc-700 rounded p-2 text-[10px] text-zinc-300 text-center shadow-xl z-10">
+                            Complete the previous incident first
+                          </div>
+                        )}
+                      </div>
+                    ) : isCompleted ? (
+                      <button
+                        onClick={() => handleStartIncident(incident.id)}
+                        disabled={isAssigning}
+                        className="text-xs px-4 py-1.5 rounded font-bold transition-all bg-zinc-800 text-zinc-300 hover:bg-zinc-700 flex items-center gap-1.5"
+                      >
+                        <CheckCircle className="h-3 w-3 text-green-400" />
+                        REPLAY
+                      </button>
+                    ) : isActive ? (
+                      <button
+                        onClick={() => navigate('/incident')}
+                        className="text-xs px-4 py-1.5 rounded font-bold transition-all bg-white text-zinc-950"
+                      >
+                        CONTINUE
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleStartIncident(incident.id)}
+                        disabled={isAssigning}
+                        className="text-xs px-4 py-1.5 rounded font-bold transition-all bg-zinc-800 text-white hover:bg-zinc-700"
+                      >
+                        START SIMULATION
+                      </button>
+                    )}
                   </div>
                 </div>
               );

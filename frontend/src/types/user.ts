@@ -6,4 +6,5 @@ export interface UserProgressDetail {
   hints_used: number;
   updated_at: string;
   current_incident_title: string | null;
+  completed_incident_ids: string[];
 }
