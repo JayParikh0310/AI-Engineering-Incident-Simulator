@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aeis_user -d aeis_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d incident_simulator"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -30,7 +30,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+psycopg://aeis_user:aeis_password@db:5432/aeis_db
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/incident_simulator
       JWT_SECRET_KEY: dev-secret-key-change-this-in-production-minimum-32-chars
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       PRIMARY_MODEL: qwen/qwen3-32b
